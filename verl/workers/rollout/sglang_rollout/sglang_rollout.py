@@ -38,6 +38,7 @@ from sglang.srt.sampling.sampling_params import SamplingParams
 from sglang.srt.server_args import ServerArgs
 from sglang.srt.utils import (
     assert_pkg_version,
+    get_local_ip_auto,
     get_open_port,
     is_cuda,
     set_prometheus_multiproc_dir,
@@ -401,7 +402,7 @@ class SGLangRollout(BaseRollout):
         # initialize the inference engine
         nnodes = -(-self._tp_size // len(self.visible_devices_set))
         if nnodes > 1:
-            ip = get_ip()
+            ip = get_local_ip_auto()
             port = get_open_port() if port is None else port
             [ip, port] = broadcast_pyobj(
                 [ip, port],
