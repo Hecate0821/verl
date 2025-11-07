@@ -1,8 +1,25 @@
 # run on 2xGPU  
 # make sure your current working directory is the root of the project
-# Using QuantizedRL with DYNAMIC INT8 quantization (BF16→INT8 like FlashRL)
-# Automatically quantizes BF16 weights to INT8 during load and reload
-# This provides memory savings while preserving model quality
+# Using QuantizedRL with DYNAMIC INT8 quantization (FlashRL approach)
+# Model: Qwen2.5-7B (same as FlashRL's sglang_patch testing)
+#
+# Requirements:
+#   1. FlashRL installed: pip install flash-rl
+#   2. Profile file at /root/profile.7b.pt (for weight reload quantization)
+#   3. Pre-quantized model for fast initial load
+#   4. Set load_format=quantized_rl (see line 82 below)
+#
+# How it works:
+#   - VERL Actor: Trains with Qwen/Qwen2.5-7B-Instruct (BF16)
+#   - SGLang Initial Load: Uses pre-quantized model (INT8, fast startup)
+#   - SGLang Weight Reloads: Quantizes BF16 weights to INT8 using profile
+#
+# PyTorch Profiling:
+#   - Enable with SGLANG_ENABLE_PROFILER=1
+#   - Profile first N steps with SGLANG_PROFILE_STEPS=5
+#   - Output directory: SGLANG_PROFILER_DIR=/root/sglang_profiles
+#   - View traces in Chrome: chrome://tracing
+#   - Or use NSight Systems: nsys-ui
 
 set -x
 
@@ -15,8 +32,8 @@ function now() {
     date '+%d-%H-%M'
 }
 
-EXPERIMENT_NAME="qwen3-4b_quantized_rl_$(now)"
-export CUDA_VISIBLE_DEVICES=6,7
+EXPERIMENT_NAME="qwen2.5-7b_quantized_rl_$(now)"
+export CUDA_VISIBLE_DEVICES=2,3
 
 python3 -m verl.trainer.main_ppo \
     --config-path="$CONFIG_PATH" \
@@ -28,7 +45,7 @@ python3 -m verl.trainer.main_ppo \
     data.filter_overlong_prompts=True \
     data.truncation='error' \
     data.return_raw_chat=True \
-    actor_rollout_ref.model.path=Qwen/Qwen3-4B \
+    actor_rollout_ref.model.path=Qwen/Qwen2.5-7B-Instruct \
     actor_rollout_ref.actor.optim.lr=1e-6 \
     actor_rollout_ref.model.use_remove_padding=True \
     actor_rollout_ref.actor.ppo_mini_batch_size=16 \
@@ -63,6 +80,8 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.multi_turn.tool_config_path="$PROJECT_DIR/examples/sglang_multiturn/config/tool_config/gsm8k_tool_config.yaml" \
     actor_rollout_ref.rollout.multi_turn.tokenization_sanity_check_mode=disable \
     actor_rollout_ref.rollout.load_format=quantized_rl \
+    +actor_rollout_ref.rollout.quantized_rl_model=/root/.cache/huggingface/hub/models--RedHatAI--Qwen2.5-7B-Instruct-quantized.w8a8 \
+    +actor_rollout_ref.rollout.quant_profile_path=/root/profile.7b.pt \
     trainer.total_epochs=15 $@
 
 

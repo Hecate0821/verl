@@ -1,8 +1,6 @@
-# run on 2xGPU  
+# run on 2xGPU
 # make sure your current working directory is the root of the project
-# Using QuantizedRL with DYNAMIC INT8 quantization (BF16→INT8 like FlashRL)
-# Automatically quantizes BF16 weights to INT8 during load and reload
-# This provides memory savings while preserving model quality
+# Optimized for QuantizedRL with FP8 - better KV cache management
 
 set -x
 
@@ -15,7 +13,7 @@ function now() {
     date '+%d-%H-%M'
 }
 
-EXPERIMENT_NAME="qwen3-4b_quantized_rl_$(now)"
+EXPERIMENT_NAME="qwen3-4b_baseline_$(now)"
 export CUDA_VISIBLE_DEVICES=6,7
 
 python3 -m verl.trainer.main_ppo \
@@ -52,7 +50,7 @@ python3 -m verl.trainer.main_ppo \
     algorithm.use_kl_in_reward=False \
     trainer.critic_warmup=0 \
     trainer.logger='["console","wandb"]' \
-    trainer.project_name='quantized_rl' \
+    trainer.project_name='gsm8k_async_rl' \
     trainer.experiment_name=$EXPERIMENT_NAME \
     trainer.n_gpus_per_node=2 \
     trainer.nnodes=1 \
@@ -62,7 +60,7 @@ python3 -m verl.trainer.main_ppo \
     data.val_files=$HOME/data/gsm8k/test.parquet \
     actor_rollout_ref.rollout.multi_turn.tool_config_path="$PROJECT_DIR/examples/sglang_multiturn/config/tool_config/gsm8k_tool_config.yaml" \
     actor_rollout_ref.rollout.multi_turn.tokenization_sanity_check_mode=disable \
-    actor_rollout_ref.rollout.load_format=quantized_rl \
+    actor_rollout_ref.rollout.load_format=auto \
     trainer.total_epochs=15 $@
 
 
