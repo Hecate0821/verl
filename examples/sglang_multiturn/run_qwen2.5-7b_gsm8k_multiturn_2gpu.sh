@@ -33,7 +33,7 @@ function now() {
 }
 
 EXPERIMENT_NAME="qwen2.5-7b_quantized_rl_$(now)"
-export CUDA_VISIBLE_DEVICES=2,3
+export CUDA_VISIBLE_DEVICES=5,6
 
 python3 -m verl.trainer.main_ppo \
     --config-path="$CONFIG_PATH" \
@@ -80,8 +80,6 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.multi_turn.tool_config_path="$PROJECT_DIR/examples/sglang_multiturn/config/tool_config/gsm8k_tool_config.yaml" \
     actor_rollout_ref.rollout.multi_turn.tokenization_sanity_check_mode=disable \
     actor_rollout_ref.rollout.load_format=quantized_rl \
-    +actor_rollout_ref.rollout.quantized_rl_model=/root/.cache/huggingface/hub/models--RedHatAI--Qwen2.5-7B-Instruct-quantized.w8a8 \
-    +actor_rollout_ref.rollout.quant_profile_path=/root/profile.7b.pt \
     trainer.total_epochs=15 $@
 
 
